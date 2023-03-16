@@ -2,7 +2,7 @@ import { knex as setupKnex, Knex } from 'knex'
 import 'dotenv/config'
 
 if (!process.env.DATABASE_URL) {
-  throw new Error('DATABASE_URL env notfound')
+  throw new Error('DATABASE_URL env notfound!')
 }
 
 export const config: Knex.Config = {
