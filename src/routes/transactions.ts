@@ -1,12 +1,17 @@
-import { cookie } from '@fastify/cookie'
 import { FastifyInstance } from 'fastify'
 import { knex } from '../database'
 import { z } from 'zod'
 import { randomUUID } from 'node:crypto'
+import { checkSessionIdExists } from '../check-sessionid-exists'
 
 export async function transactionsRoutes(app: FastifyInstance) {
-  app.get('/', async () => {
-    const transactions = await knex('transactions').select()
+  app.get('/', { preHandler: [checkSessionIdExists] }, async (req) => {
+    const { sessionId } = req.cookies
+
+    const transactions = await knex('transactions')
+      .where('session_id', sessionId)
+      .select()
+
     return { transactions }
   })
 
@@ -16,14 +21,24 @@ export async function transactionsRoutes(app: FastifyInstance) {
     })
 
     const { id } = getTransactionParamSchema.parse(request.params)
-    const transaction = await knex('transactions').where('id', id).first()
+    const { sessionId } = request.cookies
+    const transaction = await knex('transactions')
+      .where({
+        id,
+        session_id: sessionId,
+      })
+      .first()
     return { transaction }
   })
 
-  app.get('/summary', async () => {
+  app.get('/summary', async (request) => {
+    const { sessionId } = request.cookies
+
     const summary = await knex('transactions')
+      .where('session_id', sessionId)
       .sum('amount', { as: 'amount' })
       .first()
+
     return { summary }
   })
 
